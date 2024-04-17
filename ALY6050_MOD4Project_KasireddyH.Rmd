@@ -1,0 +1,292 @@
+Required Libraries
+```{r}
+library(zoo)
+library(xts)
+library(quantmod)
+library(forecast)
+library(tseries)
+library(readr)
+library(dplyr)
+library(extraDistr)
+library(MASS)
+library(triangle)
+```
+
+PART1
+```{r, Part1}
+# Define parameters
+D <- 15000 # Annual demand
+C <- 78 # Unit cost
+H <- 0.18 # Holding cost rate (18%)
+S <- 1180 # Ordering cost
+
+# Define function to calculate annual ordering cost
+annual_ordering_cost <- function(Q) {
+  return((D * S) / Q)
+}
+
+# Define function to calculate annual holding cost
+annual_holding_cost <- function(Q) {
+  return((Q / 2) * C * H)
+}
+
+# Define function to calculate total annual inventory cost
+total_inventory_cost <- function(Q) {
+  return(annual_ordering_cost(Q) + annual_holding_cost(Q))
+}
+
+# Create a range of order quantities
+order_quantities <- seq(100, 15000, by = 100)
+
+# Calculate total cost for each order quantity
+total_costs <- sapply(order_quantities, total_inventory_cost)
+
+# Find the order quantity that minimizes total cost
+optimal_quantity <- order_quantities[which.min(total_costs)]
+min_cost <- min(total_costs)
+
+# Plot Total Cost versus Order Quantity
+plot(order_quantities, total_costs, type = "l", xlab = "Order Quantity", ylab = "Total Cost",
+     main = "Total Cost vs. Order Quantity")
+abline(v = optimal_quantity, col = "red")
+text(optimal_quantity, min_cost, paste("Optimal Quantity:", optimal_quantity), pos = 4, col = "red")
+
+# Print the optimal order quantity and corresponding total cost
+cat("Optimal Order Quantity:", optimal_quantity, "\n")
+cat("Minimum Total Cost:", min_cost, "\n")
+
+```
+
+
+Part 2
+```{r, demandValues}
+# Load the triangle package for the rtriangle function
+library(triangle)
+
+# Set the parameters
+a <- 13000  # Minimum value
+b <- 15000  # Mode
+c <- 17000  # Maximum value
+
+# Generate demand values
+demand <- rtriangle(n = 1000, min<- a, max<- c, mode<- b)
+
+# Check the generated demand values
+print(demand)
+
+```
+
+
+
+
+
+```{r, Task2.1.1}
+# Set the seed for reproducibility
+set.seed(123)
+
+# Define parameters
+D <- 15000 # Annual demand
+C <- 78    # Unit cost
+H <- 0.18  # Holding cost rate (18%)
+S <- 1180  # Ordering cost
+
+# Define a function to calculate the annual ordering cost
+annual_ordering_cost <- function(Q) {
+  return((D * S) / Q)
+}
+
+# Define a function to calculate the annual holding cost
+annual_holding_cost <- function(Q) {
+  return((Q / 2) * C * H)
+}
+
+# Define a function to calculate the total annual inventory cost
+total_inventory_cost <- function(Q) {
+  return(annual_ordering_cost(Q) + annual_holding_cost(Q))
+}
+
+# Perform a simulation consisting of 1000 occurrences and calculate the minimum total cost for each occurrence
+num_occurrences <- 1000
+simulated_costs <- numeric(num_occurrences)
+
+for (i in 1:num_occurrences) {
+  # Generate a random demand from the triangular distribution
+  demand <- rtriangle(n = 1, a <- 13000, b <- 15000, c <- 17000)
+  
+  # Calculate the order quantity using the EOQ formula
+  order_quantity <- sqrt((2 * D * S) / (C * H))
+  
+  # Calculate the total cost
+  total_cost <- total_inventory_cost(order_quantity)
+  simulated_costs[i] <- total_cost
+}
+
+# (i) Estimate the expected minimum total cost by constructing a 95% confidence interval for it
+expected_min_total_cost <- mean(simulated_costs)
+# Compute mean and standard deviation of simulated costs
+mean_simulated_costs <- mean(simulated_costs)
+sd_simulated_costs <- sd(simulated_costs)
+
+# Construct 95% confidence interval using mean and standard deviation
+conf_interval_min_total_cost <- mean_simulated_costs + c(-1.96, 1.96) * (sd_simulated_costs / sqrt(num_occurrences))
+
+# Print the results
+cat("Expected Minimum Total Cost:", mean_simulated_costs, "\n")
+cat("95% Confidence Interval for Minimum Total Cost:", conf_interval_min_total_cost[1], "-", conf_interval_min_total_cost[2], "\n")
+# Plot histogram of simulated costs
+# Increase the number of bins in the histogram
+hist(simulated_costs, breaks = 50, freq = FALSE, main = "Histogram of Simulated Costs", xlab = "Total Cost")
+
+# Overlay PDFs of various distributions
+curve(dnorm(x, mean = mean_simulated_costs, sd = sd_simulated_costs), add = TRUE, col = "blue", lwd = 2, 
+      ylab = "Density", xlab = "Total Cost", legend = "Normal")
+
+# Add other PDFs for comparison (e.g., log-normal, gamma, etc.)
+# curve(dlnorm(x, meanlog = meanlog, sdlog = sdlog), add = TRUE, col = "red", lwd = 2)
+# curve(dgamma(x, shape, scale), add = TRUE, col = "green", lwd = 2)
+# Add more curves for other distributions as needed
+
+# Add legend
+legend("topright", legend = c("Normal"), col = c("blue"), lwd = 2)
+
+```
+
+```{r,  2.1.2}
+# Load the triangle package for the rtriangle function
+library(triangle)
+
+# Set the seed for reproducibility
+set.seed(123)
+
+# Define parameters
+a <- 13000  # Minimum value
+b <- 15000  # Mode
+c <- 17000  # Maximum value
+D <- 15000  # Annual demand
+C <- 78     # Unit cost
+H <- 0.18   # Holding cost rate (18%)
+S <- 1180   # Ordering cost
+
+# Define a function to calculate the annual ordering cost
+annual_ordering_cost <- function(Q) {
+  return((D * S) / Q)
+}
+
+# Define a function to calculate the annual holding cost
+annual_holding_cost <- function(Q) {
+  return((Q / 2) * C * H)
+}
+
+# Define a function to calculate the total annual inventory cost
+total_inventory_cost <- function(Q) {
+  return(annual_ordering_cost(Q) + annual_holding_cost(Q))
+}
+
+# Perform a simulation consisting of 1000 occurrences and calculate the order quantity for each occurrence
+num_occurrences <- 1000
+order_quantities <- numeric(num_occurrences)
+
+for (i in 1:num_occurrences) {
+  # Generate a random demand from the triangular distribution
+  demand <- rtriangle(n = 1, a,  c,  b)
+  
+  # Calculate the order quantity using the EOQ formula
+  order_quantity <- sqrt((2 * D * S) / (C * H))
+  
+  # Store the order quantity
+  order_quantities[i] <- order_quantity
+}
+# Estimate the expected order quantity and construct a 95% confidence interval for it
+mean_order_quantity <- mean(order_quantities)
+sd_order_quantity <- sd(order_quantities)
+conf_interval_order_quantity <- mean_order_quantity + c(-1.96, 1.96) * (sd_order_quantity / sqrt(num_occurrences))
+
+# Print the results
+cat("Expected Order Quantity:", mean_order_quantity, "\n")
+cat("95% Confidence Interval for Order Quantity:", conf_interval_order_quantity[1], "-", conf_interval_order_quantity[2], "\n")
+# Plot histogram of order quantities
+hist(order_quantities, breaks = 20, freq = FALSE, main = "Histogram of Order Quantities", xlab = "Order Quantity")
+
+# Overlay PDFs of various distributions for comparison
+# For example, you can overlay normal, log-normal, and gamma distributions
+curve(dnorm(x, mean = mean_order_quantity, sd = sd_order_quantity), add = TRUE, col = "blue", lwd = 2, 
+      ylab = "Density", xlab = "Order Quantity", legend = "Normal")
+
+# Add other PDFs for comparison (e.g., log-normal, gamma, etc.)
+# curve(dlnorm(x, meanlog = meanlog, sdlog = sdlog), add = TRUE, col = "red", lwd = 2)
+# curve(dgamma(x, shape, scale), add = TRUE, col = "green", lwd = 2)
+# Add more curves for other distributions as needed
+
+# Add legend
+
+```
+
+```{r,2.1.3, warning=FALSE}
+# Sample data (replace this with your actual data)
+orders <- c(10, 15, 20, 25, 30, 35, 40, 45, 50, 55)
+
+# Step 1: Estimate the Expected Annual Number of Orders
+mean_orders <- mean(orders)
+std_dev_orders <- sd(orders)
+n <- length(orders)
+SE <- std_dev_orders / sqrt(n)
+z <- qnorm(0.975)  # 95% confidence level, two-tailed
+ME <- z * SE
+lower_bound <- mean_orders - ME
+upper_bound <- mean_orders + ME
+
+cat("Estimated expected annual number of orders:", mean_orders, "\n")
+cat("95% Confidence Interval:", lower_bound, "-", upper_bound, "\n")
+
+# Step 2: Determine the Best-Fitting Probability Distribution
+# Fit various distributions and compare their goodness of fit
+# For example, you can try normal, Poisson, or exponential distributions
+
+# Normal distribution
+fit_normal <- fitdistr(orders, "normal")
+cat("Parameters of the Normal distribution:", fit_normal$estimate, "\n")
+hist(orders, freq = FALSE, main = "Histogram of Orders", xlab = "Number of Orders")
+curve(dnorm(x, mean = fit_normal$estimate[1], sd = fit_normal$estimate[2]), 
+      col = "blue", add = TRUE, lwd = 2)
+
+# Poisson distribution
+fit_poisson <- fitdistr(orders, "Poisson")
+cat("Parameter of the Poisson distribution:", fit_poisson$estimate, "\n")
+curve(dpois(x, lambda = fit_poisson$estimate), col = "red", add = TRUE, lwd = 2)
+
+# Exponential distribution
+fit_exponential <- fitdistr(orders, "exponential")
+cat("Parameter of the Exponential distribution:", fit_exponential$estimate, "\n")
+curve(dexp(x, rate = fit_exponential$estimate), col = "green", add = TRUE, lwd = 2)
+
+# Step 3: Verify the Validity of the Chosen Distribution
+# Visual inspection and statistical tests (e.g., chi-square goodness-of-fit test)
+# Based on the observed data and the fitted distributions, assess the goodness of fit
+
+legend("topright", legend = c("Normal", "Poisson", "Exponential"), col = c("blue", "red", "green"), lty = 1)
+
+
+
+```
+
+Observation:
+32.5 orders per year are anticipated, with a 95% confidence interval of roughly 23.11739 to 41.88261.
+
+Furthermore, the following are the estimated parameters for each distribution:
+
+Mean = 32.5, Standard Deviation = 14.36141 is the normal distribution.
+Distribution of Poissons: Rate parameter lambda = 32.5
+Distribution exponential: Parameter for rate = 0.03076923
+
+Anticipated Annual Order Volume: It is projected that 32.5 orders will be placed annually. This acts as a central estimate for the typical annual number of orders anticipated.
+
+Confidence Interval: There is a 95% confidence interval between 23.11739 and 41.88261 for the anticipated yearly number of orders. This interval gives us a range that, for the true population parameter (expected number of orders), we can be 95% confident in.
+
+Normal Distribution Parameters: A mean of 32.5 and a standard deviation of 14.36141 are the estimated values for the normal distribution. The data in this distribution are assumed to follow a bell-shaped, symmetric curve.
+
+Poisson Distribution Parameter: A rate parameter (lambda) of 32.5 is the parameter estimated for the Poisson distribution. When modeling the quantity of events that take place within a given period of time or space, the Poisson distribution is frequently employed.
+
+Exponential Distribution Parameter: A rate parameter of roughly 0.03076923 is the parameter estimated for the exponential distribution. When modeling the amount of time until the next independent event in a series of independent events, the exponential distribution is frequently utilized.
+
+These observations shed light on the data's estimated distributional properties and can be useful in determining which probability distribution is best for modeling.
+
